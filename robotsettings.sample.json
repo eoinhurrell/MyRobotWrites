@@ -1,0 +1,10 @@
+{
+    "backup_name": "robot.backup.log", 
+    "blog": "YOURSITE.tumblr.com", 
+    "consumer_key": "YOUR_CONSUMER_KEY", 
+    "consumer_secret": "YOUR_CONSUMER_SECRET_KEY", 
+    "hostname": "www.YOURSITE.com",  
+    "state": "queue", 
+    "tags": "lit,prose,AI,computer-generated",
+    "posts_per_run" : 15
+}
