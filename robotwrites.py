@@ -1,6 +1,10 @@
-import oauth2 as oauth
-import random,sys,os,urllib,urllib2,json,urlparse
+#!/usr/bin/python
 
+import oauth2 as oauth
+import random,sys,os,urllib,urllib2,json,urlparse,getopt
+
+config_file = "robotsettings.json"
+bookpath = os.path.join(os.getcwd(),'books')
 settings = {}
 
 stopword = "\n"
@@ -8,19 +12,37 @@ stopsentence = (".", "!", "?",) #for counting sentences
 sentencesep	 = "\n"
 
 def loadSettings():
+	"""Loads script settings from a json file into memory. Exits on invalid JSON in file
+
+	    Raises:
+	        IOError: if the file does not exist
+	"""	
 	global settings
-	json_data=open('robotsettings.json')
-	settings = json.load(json_data)
+	json_data=open(config_file)
+	try:
+		settings = json.load(json_data)
+	except ValueError as e:
+		print "The configuration file " + config_file + " exists but is not valid JSON. Either correct the error or revert to a working veersion"
+		print "Error details: " + str(e)
+		sys.exit(1)
+	bookpath = os.path.join(os.getcwd(),settings['source'])
 	
 def saveSettings():
+	"""Saves script settigns from memory to a json file
+
+	"""	
 	global settings
-	fout = open('robotsettings.json','w')
+	fout = open(config_file,'w')
 	fout.write(json.dumps(settings, sort_keys=True, indent=4))
 	fout.close()
 
 def authorize():
+	"""Authorizes your app with Tumblr for an access token using Oauth(consumer key, consumer secret)
+		Adapted directly from https://github.com/simplegeo/python-oauth2 3 stage auth example
+		Raises:
+			Exception on invalid response from server 
+	"""	
 	global settings
-	#Adapted directly from https://github.com/simplegeo/python-oauth2 3 stage auth example
 	consumer_key = settings['consumer_key']
 	consumer_secret = settings['consumer_secret']
 	
@@ -73,7 +95,16 @@ def authorize():
 	settings['oauth_token_secret'] = access_token['oauth_token_secret']
 	print access_token['oauth_token_secret']
 
-def queuePost(body,tags=None,title=None):
+def tumblrPost(body,tags=None,title=None):
+	"""Generates a short nonsense text based on the input book.
+
+	    Args:
+	       book (str): the location of the corpus to use to generate the post.
+	    Returns:
+	        (str) A string, five sentences long, of nonsense generated from the corpus 
+	    Raises:
+	        Error: if the file does not exist
+	"""	
 	global settings
 	post_address = "http://api.tumblr.com/v2/blog/"+settings['blog']+"/post"
 	data = {"type":"text","state":settings['state'],"body" : body, "oauth_token":settings['oauth_token']}
@@ -91,6 +122,15 @@ def queuePost(body,tags=None,title=None):
 		print js
 
 def generatePost(book):
+	"""Generates a short nonsense text based on the input book.
+
+	    Args:
+	       book (str): the location of the corpus to use to generate the post.
+	    Returns:
+	        (str) A string of nonsense generated from the corpus. Number of sentences is defined by settings['max_sentences'] 
+	    Raises:
+	        Error: if the file does not exist
+	"""
 	global stopword
 	global stopsentence
 	global sentencesep
@@ -110,8 +150,10 @@ def generatePost(book):
 	# Mark the end of the file
 	table.setdefault( (w1, w2), [] ).append(stopword)
 
-	# GENERATE SENTENCE OUTPUT
-	maxsentences	= 5
+	# GENERATE SENTENCE OUTPUT		
+	maxsentences = 5
+	if 'max_sentences' in settings:
+		maxsentences = settings['max_sentences']
 
 	w1 = stopword
 	w2 = stopword
@@ -135,20 +177,58 @@ def generatePost(book):
 		w1, w2 = w2, newword
 	return " ".join(post)
 
-def addPostToQueue():
-	bookpath = os.path.join(os.getcwd(),'books')
+def randomPostToTumblr():
+	"""Chooses a random corpus, generates tumblr tags and a tumblr post, posts to tumblr
+	
+	"""	
 	txt_files = filter(lambda x: x.endswith('.txt'), os.listdir(bookpath))
 	book = random.choice(txt_files)
 	TAGS = settings['tags'] + ",inspired by " + book.replace('-','by')[:book.find(".")+1]
 	if(book.find("-") != -1):
 		TAGS = TAGS + "," + book[:book.find("-")-1]
 		TAGS = TAGS + "," + book[book.find("-")+2:book.find(".")]
-	queuePost(generatePost(os.path.join(bookpath,book)), tags=TAGS)
+	tumblrPost(generatePost(os.path.join(bookpath,book)), tags=TAGS)
+	
+def randomPostToScreen():
+	"""Prints a post generated from a randomly chosen corpus to the screen
+
+	"""
+	txt_files = filter(lambda x: x.endswith('.txt'), os.listdir(bookpath))
+	book = random.choice(txt_files)
+	print generatePost(os.path.join(bookpath,book))
+	print '----------------------------'
 
 if __name__ == '__main__':
+	print_posts = False
+	silent = False
+	try:
+		opts, args = getopt.getopt(sys.argv[1:],"hpsc:",["print","silent","config="])
+	except getopt.GetoptError:
+		print 'Usage: robotwriter.py [-p] [--config <configfile.json>]'
+		sys.exit(2)
+	for opt, arg in opts:
+		if opt == '-h':
+			print 'Usage: robotwriter.py [-p] [--config <configfile.json>]'
+			sys.exit()
+		elif opt in ("-c", "--config"):
+			try:
+			   with open(arg) as f: pass
+			except IOError as e:
+				print "Configuration file " + arg + " does not exist, exiting"
+				sys.exit(1)
+			config_file = arg
+		elif opt in ("-p", "--print"):
+			print_posts = True
+		elif opt in ("-s", "--silent"):
+			silent = True
 	loadSettings()
 	if "oauth_token" not in settings.keys():
 		authorize()
 	for x in xrange(settings['posts_per_run']):
-		addPostToQueue()
+		if not print_posts:
+			randomPostToTumblr()
+		else:
+			randomPostToScreen()
+	if not silent:
+		print str(settings['posts_per_run']) + " post(s) successfully generated."
 	saveSettings()
