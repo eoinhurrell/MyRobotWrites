@@ -41,8 +41,6 @@ The tags Tumblr attaches to the posts.
 * "posts_per_run"
 Number of posts to generate every time the script is run
 
-
-
 Additionally two other fields will be needed to post to Tumblr. These are Oauth token details, which you can add manually if you already have them, but the preferred method is to allow the script to generate and save these tokens:
 
 * "oauth_token"

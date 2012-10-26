@@ -18,6 +18,7 @@ def loadSettings():
 	        IOError: if the file does not exist
 	"""	
 	global settings
+	global bookpath
 	json_data=open(config_file)
 	try:
 		settings = json.load(json_data)
