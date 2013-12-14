@@ -1,34 +1,13 @@
 .DS_Store
 robotsettings.py
-robotsettings.pyc
-books/The Iron Duke - Meljean Brook.txt
-
-books/Grave Witch - Kaylana Price.txt
-
-books/Silent in the Grave - Deanna Raybourn.txt
-
-books/Slave to Silence - Nalini Singh.txt
-
+*.pyc
+books/*.txt
 robotsettings.json
-
 combined/1.txt
-
-other books/1.txt
-
-other books/2.txt
-
-other books/3.txt
-
-other books/4.txt
-
+other books
 smut.json
-
-other books/5.txt
-
-other books/6.txt
-
-other books/7.txt
-
-other books/8.txt
-
-other books/9.txt
+tools/popular.json
+tools/.ropeproject/objectdb
+tools/.ropeproject/history
+tools/.ropeproject/globalnames
+tools/.ropeproject/config.py
